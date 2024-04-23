@@ -1,0 +1,46 @@
+  version: "3.8"
+
+  services:
+    cadvisor:
+      image: gcr.io/cadvisor/cadvisor
+      volumes:
+        - /:/rootfs:ro
+        - /var/run:/var/run:ro
+        - /sys:/sys:ro
+        - /var/lib/docker/:/var/lib/docker:ro
+        - /dev/disk/:/dev/disk:ro
+      ports:
+        - 9257:8080
+      privileged: true
+      devices:
+        - /dev/kmsg:/dev/kmsg
+      restart: unless-stopped
+    process_exporter:
+      image: ncabatoff/process-exporter
+      command:
+        - "-procfs"
+        - "/host/proc"
+        - "-config.path"
+        - "/config/proc_exp.conf"
+      volumes:
+        - /proc:/host/proc
+        - ./config:/config
+      privileged: true
+      ports:
+        - 9256:9256
+      restart: unless-stopped
+    node_exporter:
+      image: quay.io/prometheus/node-exporter
+      volumes:
+        - /:/host:ro,rslave
+      command:
+        - "--path.rootfs=/host"
+        - "--collector.disable-defaults"
+        - "--collector.cpu"
+        - "--collector.filesystem"
+        - "--collector.loadavg"
+        - "--collector.meminfo"
+        - "--collector.netdev"
+      network_mode: host
+      pid: host
+      restart: unless-stopped
